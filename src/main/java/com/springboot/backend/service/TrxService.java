@@ -1,9 +1,10 @@
 package com.springboot.backend.service;
 
+import com.springboot.backend.payload.ApiResponse;
 import com.springboot.backend.payload.HeaderRequest;
 
 public interface TrxService {
 
-    String addTrx(HeaderRequest request);
+    ApiResponse addTrx(HeaderRequest request);
 
 }

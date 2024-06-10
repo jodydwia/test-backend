@@ -1,7 +1,9 @@
 package com.springboot.backend.service.impl;
 
+import com.springboot.backend.exception.BadRequestException;
 import com.springboot.backend.model.Detail;
 import com.springboot.backend.model.Header;
+import com.springboot.backend.payload.ApiResponse;
 import com.springboot.backend.payload.HeaderRequest;
 import com.springboot.backend.service.DetailService;
 import com.springboot.backend.service.HeaderService;
@@ -30,81 +32,89 @@ public class TrxServiceImpl implements TrxService {
     }
 
     @Override
-    public String addTrx(HeaderRequest request) {
+    public ApiResponse addTrx(HeaderRequest request) {
 
-        LocalDate tanggalAwal = request.getTanggalAwal().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate tanggalAkhir = request.getTanggalAkhir().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        try {
+            LocalDate tanggalAwal = request.getTanggalAwal().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate tanggalAkhir = request.getTanggalAkhir().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 
-        long months = ChronoUnit.MONTHS.between(
-                tanggalAwal, tanggalAkhir
-        )+1;
+            long months = ChronoUnit.MONTHS.between(
+                    tanggalAwal, tanggalAkhir
+            )+1;
 
 
-        Header header = new Header();
-        header.setTanggalAwal(request.getTanggalAwal());
-        header.setTanggalAkhir(request.getTanggalAkhir());
-        header.setNominal(request.getNominal());
+            Header header = new Header();
+            header.setTanggalAwal(request.getTanggalAwal());
+            header.setTanggalAkhir(request.getTanggalAkhir());
+            header.setNominal(request.getNominal());
 
-        Header save = headerService.addHeader(request);
+            Header save = headerService.addHeader(request);
 
-        LocalDate tanggalAwalDetail = tanggalAwal;
-        double nominal = 0;
-        double totalRandomNominal = 0;
+            LocalDate tanggalAwalDetail = tanggalAwal;
+            double nominal = 0;
+            double totalRandomNominal = 0;
 
-        List<Detail> details = new ArrayList<>();
+            List<Detail> details = new ArrayList<>();
 
-        int count = 0;
+            int count = 0;
 
-        for (int i = 1; i <= months; i++) {
+            for (int i = 1; i <= months; i++) {
 
-            Detail detail = new Detail();
+                Detail detail = new Detail();
 
-            detail.setTanggalAwal(Date.from(tanggalAwalDetail.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+                detail.setTanggalAwal(Date.from(tanggalAwalDetail.atStartOfDay(ZoneId.systemDefault()).toInstant()));
 
-            if (i != months) {
-                Date lastDate = Date.from(getLastdate(tanggalAwalDetail).atStartOfDay(ZoneId.systemDefault()).toInstant());
-                detail.setTanggalAkhir(lastDate);
-            } else {
-                detail.setTanggalAkhir(Date.from(tanggalAkhir.atStartOfDay(ZoneId.systemDefault()).toInstant()));
-            }
-
-            if(i != months) {
-                // create Random object
-                Random random = new Random();
-                double min=80, max=120;
-                double randomNumber = random.nextDouble(max - min + 1) + min;
-                nominal = randomNumber / 100 * (save.getNominal().doubleValue() / (months));
-                totalRandomNominal += nominal;
-            } else {
-                if(save.getNominal().doubleValue() > totalRandomNominal) {
-                    nominal = save.getNominal().doubleValue() - totalRandomNominal;
+                if (i != months) {
+                    Date lastDate = Date.from(getLastdate(tanggalAwalDetail).atStartOfDay(ZoneId.systemDefault()).toInstant());
+                    detail.setTanggalAkhir(lastDate);
                 } else {
-                    nominal = 0;
+                    detail.setTanggalAkhir(Date.from(tanggalAkhir.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+                }
+
+                if(i != months) {
+                    // create Random object
+                    Random random = new Random();
+                    double min=80, max=120;
+                    double randomNumber = random.nextDouble(max - min + 1) + min;
+                    nominal = randomNumber / 100 * (save.getNominal().doubleValue() / (months));
+                    totalRandomNominal += nominal;
+                } else {
+                    if(save.getNominal().doubleValue() > totalRandomNominal) {
+                        nominal = save.getNominal().doubleValue() - totalRandomNominal;
+                    } else {
+                        nominal = 0;
+                    }
+                }
+
+                detail.setNominal(new BigDecimal(nominal).setScale(2, BigDecimal.ROUND_HALF_EVEN));
+                detail.setHeaderId(save.getId());
+
+                details.add(detail);
+
+                if (i != months) {
+                    tanggalAwalDetail = detail.getTanggalAkhir().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1);
+                }
+
+                count++;
+
+                // concurrent 1000
+                if (count == 1000) {
+                    detailService.addDetails(details);
+                    count = 0;
+                    details = new ArrayList<>();
                 }
             }
 
-            detail.setNominal(new BigDecimal(nominal).setScale(2, BigDecimal.ROUND_HALF_EVEN));
-            detail.setHeaderId(save.getId());
+            detailService.addDetails(details);
 
-            details.add(detail);
+            return new ApiResponse(Boolean.TRUE, "Trx inserted successfully");
 
-            if (i != months) {
-                tanggalAwalDetail = detail.getTanggalAkhir().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1);
-            }
+        } catch (Error error) {
+            ApiResponse apiResponse = new ApiResponse(Boolean.FALSE, error.getMessage());
 
-            count++;
-
-            // concurrent 1000
-            if (count == 1000) {
-                detailService.addDetails(details);
-                count = 0;
-                details = new ArrayList<>();
-            }
+            throw new BadRequestException(apiResponse);
         }
 
-        detailService.addDetails(details);
-
-        return "success";
     }
 
     public LocalDate getLastdate(LocalDate date) {

@@ -1,5 +1,6 @@
 package com.springboot.backend.controller;
 
+import com.springboot.backend.payload.ApiResponse;
 import com.springboot.backend.payload.HeaderRequest;
 import com.springboot.backend.payload.response.ResponseHandler;
 import com.springboot.backend.service.TrxService;
@@ -22,7 +23,7 @@ public class TrxController {
     @PostMapping
     public ResponseEntity<Object> addHeader(@Valid @RequestBody HeaderRequest request) {
 
-        String response = trxService.addTrx(request);
+        ApiResponse response = trxService.addTrx(request);
 
         return ResponseHandler.responseBuilder(HttpStatus.CREATED, response);
     }

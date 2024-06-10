@@ -25,5 +25,7 @@ services:
     environment:
       MYSQL_DATABASE: test_backend
       MYSQL_ROOT_PASSWORD:
+    volumes:
+      - ./data:/docker-entrypoint-initdb.d
 networks:
   springapimysql-net:

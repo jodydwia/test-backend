@@ -12,7 +12,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Random;
 
 @Service
@@ -45,14 +47,11 @@ public class TrxServiceImpl implements TrxService {
 
         Header save = headerService.addHeader(request);
 
-
         LocalDate tanggalAwalDetail = tanggalAwal;
         double nominal = 0;
         double totalRandomNominal = 0;
-        // create Random object
-        Random random = new Random();
-        double min=80, max=100;
-        double randomNumber = random.nextDouble(max - min + 1) + min;
+
+        List<Detail> details = new ArrayList<>();
 
         for (int i = 1; i <= months; i++) {
 
@@ -68,20 +67,31 @@ public class TrxServiceImpl implements TrxService {
             }
 
             if(i != months) {
-                nominal = randomNumber / 1000 * (months-1) * save.getNominal().doubleValue();
+                // create Random object
+                Random random = new Random();
+                double min=80, max=120;
+                double randomNumber = random.nextDouble(max - min + 1) + min;
+                nominal = randomNumber / 100 * (save.getNominal().doubleValue() / (months));
                 totalRandomNominal += nominal;
             } else {
-                nominal = save.getNominal().doubleValue() - totalRandomNominal;
+                if(save.getNominal().doubleValue() > totalRandomNominal) {
+                    nominal = save.getNominal().doubleValue() - totalRandomNominal;
+                } else {
+                    nominal = 0;
+                }
             }
 
             detail.setNominal(new BigDecimal(nominal).setScale(2, BigDecimal.ROUND_HALF_EVEN));
             detail.setHeaderId(save.getId());
-            Detail saveDetail = detailService.addDetail(detail);
+
+            details.add(detail);
 
             if (i != months) {
-                tanggalAwalDetail = saveDetail.getTanggalAkhir().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1);
+                tanggalAwalDetail = detail.getTanggalAkhir().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1);
             }
         }
+
+        detailService.addDetails(details);
 
         return "success";
     }

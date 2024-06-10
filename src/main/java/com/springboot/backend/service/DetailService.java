@@ -1,11 +1,13 @@
 package com.springboot.backend.service;
 
 import com.springboot.backend.model.Detail;
-import com.springboot.backend.payload.DetailRequest;
-import com.springboot.backend.payload.DetailResponse;
+
+import java.util.List;
 
 public interface DetailService {
 
     Detail addDetail(Detail detail);
+
+    String addDetails(List<Detail> details);
 
 }

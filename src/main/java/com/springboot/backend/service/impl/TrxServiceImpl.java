@@ -53,6 +53,8 @@ public class TrxServiceImpl implements TrxService {
 
         List<Detail> details = new ArrayList<>();
 
+        int count = 0;
+
         for (int i = 1; i <= months; i++) {
 
             Detail detail = new Detail();
@@ -88,6 +90,15 @@ public class TrxServiceImpl implements TrxService {
 
             if (i != months) {
                 tanggalAwalDetail = detail.getTanggalAkhir().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1);
+            }
+
+            count++;
+
+            // concurrent 1000
+            if (count == 1000) {
+                detailService.addDetails(details);
+                count = 0;
+                details = new ArrayList<>();
             }
         }
 

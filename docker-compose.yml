@@ -1,36 +1,29 @@
-version: '3.8'
+version: "3.7"
 services:
-  db:
-    image: mysql
-    container_name: backend-db
+  api_service:
+    build: .
     restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - springapimysql-net
     environment:
-      MYSQL_DATABASE: 'backend'
-      MYSQL_PASSWORD: 'root'
-      MYSQL_ROOT_PASSWORD: 'root'
-    ports:
-      - '3306:3306'
-    networks:
-      - backend-network
-    healthcheck:
-      test: "/usr/bin/mysql --user=root --password=root --execute \"SHOW DATABASES;\""
-      interval: 2s
-      timeout: 20s
-      retries: 10
-    volumes:
-      - ./data:/docker-entrypoint-initdb.d
-  application:
-    container_name: backend-application
-    build:
-      context: ./
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    networks:
-      - backend-network
+      - spring.datasource.url=jdbc:mysql://mysqldb:3306/test_backend?useSSL=false&serverTimezone=Asia/Jakarta&allowPublicKeyRetrieval=true
     depends_on:
-      - "db"
+      - mysqldb
+
+    volumes:
+      - .m2:/root/.m2
+
+  mysqldb:
+    image: "mysql:8.0"
+    restart: always
+    ports:
+      - 3306:3306
+    networks:
+      - springapimysql-net
+    environment:
+      MYSQL_DATABASE: test_backend
+      MYSQL_ROOT_PASSWORD:
 networks:
-  backend-network:
-    name: backend-network
-    driver: bridge
+  springapimysql-net:

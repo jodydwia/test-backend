@@ -1,5 +1,4 @@
-FROM adoptopenjdk/openjdk11:alpine-jre
-VOLUME /tmp
-ARG JAR_FILE=target/*.jar
-COPY ${JAR_FILE} app.jar
-ENTRYPOINT ["java","-jar","/app.jar"]
+FROM tomcat:9.0-jre17-temurin-focal
+ADD target/backend-service.war /usr/local/tomcat/webapps/
+EXPOSE 8080
+CMD ["catalina.sh", "run"]

@@ -1,6 +1,8 @@
 spring:
-  config:
-    import: file:./app-config.yml
+  datasource:
+    url: jdbc:mysql://localhost:3306/test_backend?useSSL=false&serverTimezone=Asia/Jakarta&allowPublicKeyRetrieval=true
+    username: root
+    password:
   jpa:
     hibernate:
       ddl-auto: none
@@ -14,6 +16,12 @@ spring:
     time-zone: Asia/Jakarta
 
 app:
-  jwtSecret: ecretKey
+  jwtSecret: secretKey
   jwtExpirationInMs: 21600000
   profile: "development"
+
+cors:
+  allowedOrigins: "*"
+
+server:
+  port: 8080
